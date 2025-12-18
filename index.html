@@ -55,29 +55,50 @@ const symbols = ['ち', 'ま', 'が', 'お', 'う', 'んこ'];
 const container = document.getElementById('container');
 const btn = document.getElementById('rollBtn');
 
-// 🔊 ローカル音声（最重要ポイント）
+/* ローカル音声（同じフォルダに置く） */
 const diceSound = new Audio('rpg-dice-rolling-95182 3.mp3');
 diceSound.preload = 'auto';
 
+function isFarEnough(x, y, placed, minDist) {
+  for (const p of placed) {
+    const dx = x - p.x;
+    const dy = y - p.y;
+    if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function rollDice() {
-  // 表示クリア
   container.innerHTML = '';
 
-  // 音を鳴らす（ユーザ操作直結）
+  /* ユーザ操作直結なので音が鳴る */
   diceSound.currentTime = 0;
   diceSound.play();
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
+  const placed = [];
+  const MIN_DIST = 90; // 文字同士の最小距離
+
   for (let i = 0; i < 3; i++) {
+    let x, y;
+    let tries = 0;
+
+    do {
+      x = Math.random() * (w - 80);
+      y = Math.random() * (h - 120);
+      tries++;
+    } while (!isFarEnough(x, y, placed, MIN_DIST) && tries < 50);
+
+    placed.push({ x, y });
+
     const d = document.createElement('div');
     d.className = 'dice';
-
     d.textContent = symbols[Math.floor(Math.random() * symbols.length)];
 
-    const x = Math.random() * (w - 80);
-    const y = Math.random() * (h - 120);
     const rot = Math.floor(Math.random() * 360);
 
     d.style.left = x + 'px';
