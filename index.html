@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Dice Roll</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+#container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dice {
+  position: absolute;
+  font-size: 64px;
+  font-weight: bold;
+  user-select: none;
+  animation: pop 0.4s ease-out;
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.5) rotate(0deg); opacity: 0; }
+  100% { transform: scale(1) rotate(var(--rot)); opacity: 1; }
+}
+
+#rollBtn {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 32px;
+  font-size: 20px;
+  border-radius: 12px;
+  border: none;
+  background: #ff9800;
+  color: #000;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+<div id="container"></div>
+<button id="rollBtn">🎲 サイコロを振る</button>
+
+<!-- 効果音 -->
+<audio id="diceSound" preload="auto">
+  <source src="https://cdn.pixabay.com/download/audio/2022/10/04/audio_6c9c9c1a94.mp3?filename=rpg-dice-rolling-95182.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const symbols = ['ち', 'ま', 'が', 'お', 'う', 'んこ'];
+const container = document.getElementById('container');
+const sound = document.getElementById('diceSound');
+const btn = document.getElementById('rollBtn');
+
+function rollDice() {
+  // 既存の出目を消す
+  container.innerHTML = '';
+
+  // 音を鳴らす（ユーザ操作起点）
+  sound.currentTime = 0;
+  sound.play();
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  for (let i = 0; i < 3; i++) {
+    const d = document.createElement('div');
+    d.className = 'dice';
+
+    const sym = symbols[Math.floor(Math.random() * symbols.length)];
+    d.textContent = sym;
+
+    const x = Math.random() * (w - 80);
+    const y = Math.random() * (h - 160);
+
+    const rot = Math.floor(Math.random() * 360) + 'deg';
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    d.style.setProperty('--rot', rot);
+
+    container.appendChild(d);
+  }
+}
+
+btn.addEventListener('click', rollDice);
+</script>
+</body>
+</html>
