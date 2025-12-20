@@ -17,24 +17,38 @@ html, body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
 }
 
-#container {
-  position: relative;
-  width: 100%;
-  height: 100%;
+/* 🎲 サイコロ描画エリア（UIを物理的に除外） */
+#diceArea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 96px;   /* ← ボタン分を確保 */
 }
 
+/* 文字 */
 .dice {
   position: absolute;
   font-size: 64px;
   font-weight: bold;
   user-select: none;
+  pointer-events: none;
+}
+
+/* 🔘 UI専用レイヤ */
+#uiArea {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 96px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #111;
 }
 
 #rollBtn {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 16px 32px;
   font-size: 20px;
   border-radius: 12px;
@@ -47,23 +61,32 @@ html, body {
 </head>
 
 <body>
-<div id="container"></div>
-<button id="rollBtn">🎲 サイコロを振る</button>
+
+<div id="diceArea"></div>
+
+<div id="uiArea">
+  <button id="rollBtn">🎲 サイコロを振る</button>
+</div>
 
 <script>
 const symbols = ['ち', 'ま', 'が', 'お', 'う', 'んこ'];
-const container = document.getElementById('container');
+
+const diceArea = document.getElementById('diceArea');
 const btn = document.getElementById('rollBtn');
 
-/* ローカル音声（同じフォルダに置く） */
+/* 🔊 ローカル音声（同じ階層に置く） */
 const diceSound = new Audio('rpg-dice-rolling-95182 3.mp3');
 diceSound.preload = 'auto';
 
-function isFarEnough(x, y, placed, minDist) {
+const DICE_COUNT = 3;
+const MIN_DIST = 90;
+const MAX_TRIES = 50;
+
+function isFarEnough(x, y, placed) {
   for (const p of placed) {
     const dx = x - p.x;
     const dy = y - p.y;
-    if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+    if (Math.hypot(dx, dy) < MIN_DIST) {
       return false;
     }
   }
@@ -71,27 +94,26 @@ function isFarEnough(x, y, placed, minDist) {
 }
 
 function rollDice() {
-  container.innerHTML = '';
+  diceArea.innerHTML = '';
 
-  /* ユーザ操作直結なので音が鳴る */
+  // ユーザー操作直結 → 音が鳴る
   diceSound.currentTime = 0;
   diceSound.play();
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const rect = diceArea.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
 
   const placed = [];
-  const MIN_DIST = 90; // 文字同士の最小距離
 
-  for (let i = 0; i < 3; i++) {
-    let x, y;
-    let tries = 0;
+  for (let i = 0; i < DICE_COUNT; i++) {
+    let x, y, tries = 0;
 
     do {
       x = Math.random() * (w - 80);
-      y = Math.random() * (h - 120);
+      y = Math.random() * (h - 80);
       tries++;
-    } while (!isFarEnough(x, y, placed, MIN_DIST) && tries < 50);
+    } while (!isFarEnough(x, y, placed) && tries < MAX_TRIES);
 
     placed.push({ x, y });
 
@@ -99,17 +121,18 @@ function rollDice() {
     d.className = 'dice';
     d.textContent = symbols[Math.floor(Math.random() * symbols.length)];
 
+    // ランダムな初期回転のみ（アニメーションなし）
     const rot = Math.floor(Math.random() * 360);
-
     d.style.left = x + 'px';
     d.style.top = y + 'px';
     d.style.transform = `rotate(${rot}deg)`;
 
-    container.appendChild(d);
+    diceArea.appendChild(d);
   }
 }
 
 btn.addEventListener('click', rollDice);
 </script>
+
 </body>
 </html>
