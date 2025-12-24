@@ -17,16 +17,16 @@ html, body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
 }
 
-/* 🎲 サイコロ描画エリア（UIを物理的に除外） */
+/* 🎲 サイコロ描画エリア（UI完全除外） */
 #diceArea {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 96px;   /* ← ボタン分を確保 */
+  bottom: 200px; /* UI高さ分 */
 }
 
-/* 文字 */
+/* サイコロ文字 */
 .dice {
   position: absolute;
   font-size: 64px;
@@ -35,21 +35,41 @@ html, body {
   pointer-events: none;
 }
 
-/* 🔘 UI専用レイヤ */
+/* 🔘 UIエリア */
 #uiArea {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 96px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  height: 200px;
+  padding: 12px;
+  box-sizing: border-box;
   background: #111;
+  border-top: 1px solid #333;
+}
+
+.row {
+  margin-bottom: 10px;
+}
+
+label {
+  margin-right: 8px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 6px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.radio-group label {
+  margin-right: 12px;
 }
 
 #rollBtn {
-  padding: 16px 32px;
+  width: 100%;
+  padding: 14px;
   font-size: 20px;
   border-radius: 12px;
   border: none;
@@ -65,28 +85,64 @@ html, body {
 <div id="diceArea"></div>
 
 <div id="uiArea">
+
+  <!-- ① 文字入力 -->
+  <div class="row">
+    <label>出目文字（カンマ区切り）</label>
+    <input id="symbolInput" type="text" value="ち,ま,が,お,う,んこ">
+  </div>
+
+  <!-- ② サイコロ数 -->
+  <div class="row radio-group">
+    <label>サイコロ数：</label>
+    <span id="diceCountRadios"></span>
+  </div>
+
+  <!-- ボタン -->
   <button id="rollBtn">🎲 サイコロを振る</button>
 </div>
 
 <script>
-const symbols = ['ち', 'ま', 'が', 'お', 'う', 'んこ'];
-
 const diceArea = document.getElementById('diceArea');
 const btn = document.getElementById('rollBtn');
+const symbolInput = document.getElementById('symbolInput');
+const diceCountRadios = document.getElementById('diceCountRadios');
 
-/* 🔊 ローカル音声（同じ階層に置く） */
+/* 🔊 ローカル音声 */
 const diceSound = new Audio('rpg-dice-rolling-95182 3.mp3');
 diceSound.preload = 'auto';
 
-const DICE_COUNT = 3;
 const MIN_DIST = 90;
 const MAX_TRIES = 50;
 
+/* ラジオボタン生成（1〜10，デフォルト3） */
+for (let i = 1; i <= 10; i++) {
+  const label = document.createElement('label');
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = 'diceCount';
+  radio.value = i;
+  if (i === 3) radio.checked = true;
+
+  label.appendChild(radio);
+  label.append(` ${i}`);
+  diceCountRadios.appendChild(label);
+}
+
+function getDiceCount() {
+  return Number(document.querySelector('input[name="diceCount"]:checked').value);
+}
+
+function getSymbols() {
+  return symbolInput.value
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
 function isFarEnough(x, y, placed) {
   for (const p of placed) {
-    const dx = x - p.x;
-    const dy = y - p.y;
-    if (Math.hypot(dx, dy) < MIN_DIST) {
+    if (Math.hypot(x - p.x, y - p.y) < MIN_DIST) {
       return false;
     }
   }
@@ -96,7 +152,9 @@ function isFarEnough(x, y, placed) {
 function rollDice() {
   diceArea.innerHTML = '';
 
-  // ユーザー操作直結 → 音が鳴る
+  const symbols = getSymbols();
+  if (symbols.length === 0) return;
+
   diceSound.currentTime = 0;
   diceSound.play();
 
@@ -105,8 +163,9 @@ function rollDice() {
   const h = rect.height;
 
   const placed = [];
+  const diceCount = getDiceCount();
 
-  for (let i = 0; i < DICE_COUNT; i++) {
+  for (let i = 0; i < diceCount; i++) {
     let x, y, tries = 0;
 
     do {
@@ -121,7 +180,6 @@ function rollDice() {
     d.className = 'dice';
     d.textContent = symbols[Math.floor(Math.random() * symbols.length)];
 
-    // ランダムな初期回転のみ（アニメーションなし）
     const rot = Math.floor(Math.random() * 360);
     d.style.left = x + 'px';
     d.style.top = y + 'px';
